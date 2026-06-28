@@ -1,5 +1,6 @@
 node_modules/
 dist/
-out/
+out/*
+!out/*.mp4
 .remotion/
 *.props.json
