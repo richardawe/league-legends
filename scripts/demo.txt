@@ -1,0 +1,8 @@
+[SCENE: park]
+ALICE (wave): Hey! Over here, I saved us a spot.
+BOB (walk-in, talk): Sorry I'm late, the traffic was terrible.
+ALICE (talk): No worries at all, I just got here myself.
+[SCENE: cafe]
+BOB (idle): This place looks cozy.
+ALICE (talk): I come here every weekend.
+BOB (talk): We should make it a regular thing.

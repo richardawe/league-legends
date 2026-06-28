@@ -1,0 +1,7 @@
+# Place .riv character files here.
+# Each file should be named <character-name>.riv (lowercase).
+# Example: alice.riv, bob.riv
+#
+# Each .riv file must contain exactly ONE state machine.
+# The state machine inputs are the only valid action names in scripts.
+# Common inputs: idle, talk, wave, walk-in
