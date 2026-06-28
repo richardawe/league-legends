@@ -121,15 +121,18 @@ function RiveCharacter({
     // Fire state machine inputs once, at startFrame.
     if (frame >= startFrame && !actionsAppliedRef.current) {
       actionsAppliedRef.current = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SMI = (rive as any).SMIInput;
       const count: number = smInstance.inputCount();
       for (let i = 0; i < count; i++) {
         const inp = smInstance.input(i);
-        if (actions.includes(inp.name as string)) {
-          if (inp.type === rive.SMIInput?.trigger) {
+        const inpNameLower = (inp.name as string).toLowerCase();
+        if (actions.some((a) => a.toLowerCase() === inpNameLower)) {
+          if (SMI && inp.type === SMI.trigger) {
             inp.asTrigger().fire();
-          } else if (inp.type === rive.SMIInput?.bool) {
-            inp.asBoolean().value = true;
-          } else if (inp.type === rive.SMIInput?.number) {
+          } else if (SMI && inp.type === SMI.bool) {
+            inp.asBool().value = true;
+          } else if (SMI && inp.type === SMI.number) {
             inp.asNumber().value = 1;
           }
         }

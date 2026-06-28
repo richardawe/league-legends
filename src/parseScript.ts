@@ -5,6 +5,7 @@ export interface TimelineEntry {
   dialogue: string;
   startFrame: number;
   durationFrames: number;
+  audioFile?: string;
 }
 
 // --- Timing constants (tweak here only) ---
@@ -46,7 +47,7 @@ export function parseScript(text: string): TimelineEntry[] {
     const character = lineMatch[1].trim().toLowerCase();
     const actions = lineMatch[2]
       .split(",")
-      .map((a) => a.trim().toLowerCase())
+      .map((a) => a.trim())
       .filter(Boolean);
     const dialogue = lineMatch[3].trim();
 
