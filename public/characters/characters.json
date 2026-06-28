@@ -10,5 +10,35 @@
     "artboard": "Artboard",
     "stateMachine": "State Machine 1",
     "inputs": ["isHappy", "isSad", "isDisgust", "isHappyTalk", "isSadTalk", "isDisgustTalk", "isHeadMove"]
+  },
+  "mentor": {
+    "file": "live-avatar.riv",
+    "artboard": "Live Avatar",
+    "stateMachine": "State Machine 1",
+    "inputs": ["happy", "thinking", "idle", "hover"]
+  },
+  "alex": {
+    "file": "avatar-pack.riv",
+    "artboard": "Avatar 1",
+    "stateMachine": "avatar",
+    "inputs": ["isHappy", "isSad"]
+  },
+  "sam": {
+    "file": "avatar-pack.riv",
+    "artboard": "Avatar 2",
+    "stateMachine": "avatar2",
+    "inputs": ["isHappy", "isSad"]
+  },
+  "casey": {
+    "file": "avatar-pack.riv",
+    "artboard": "Avatar 3",
+    "stateMachine": "avatar3",
+    "inputs": ["isHappy", "isSad"]
+  },
+  "host": {
+    "file": "character-talking.riv",
+    "artboard": "Artboard",
+    "stateMachine": "State Machine_call",
+    "inputs": ["talk", "Lipsync"]
   }
 }

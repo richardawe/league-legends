@@ -7,3 +7,15 @@ ALICE (isHappyTalk): This place has the best coffee in town.
 RABBIT (IsHappy): The atmosphere here is wonderful.
 ALICE (isSadTalk): I heard there might be some changes coming though.
 RABBIT (IsSad, isBodyMove): Oh really? Tell me everything.
+[SCENE: office]
+MENTOR (happy): Welcome everyone, let us get started with today's session.
+ALEX (isHappy): Great to be here, I am really looking forward to this.
+SAM (isHappy): Same here, this is going to be really exciting!
+MENTOR (thinking): Before we dive in, let me think about the best approach.
+CASEY (isSad): It has been a tough week honestly.
+SAM (isSad): Yeah, things have been really difficult lately.
+MENTOR (happy): I hear you both. Let us work through this together.
+[SCENE: park]
+HOST (talk): And that wraps up today's episode. Thanks for joining us!
+ALEX (isHappy): This was such an amazing session, truly inspiring.
+HOST (talk): We will see you all again next time. Take care everyone!
