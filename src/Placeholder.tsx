@@ -33,7 +33,7 @@ export function BackgroundPlaceholder({ scene }: BackgroundPlaceholderProps) {
 interface CharacterPlaceholderProps {
   character: string;
   actions: string[];
-  left: number;
+  left: number | string;
 }
 
 export function CharacterPlaceholder({

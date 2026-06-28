@@ -4,28 +4,33 @@ import {
   Sequence,
   Img,
   staticFile,
-  useCurrentFrame,
 } from "remotion";
 import { TimelineEntry, FPS } from "./parseScript";
 import RiveCharacter from "./RiveCharacter";
 import { BackgroundPlaceholder, CharacterPlaceholder } from "./Placeholder";
 
 // ---------------------------------------------------------------------------
-// Runtime asset checks.
-// In a local Remotion project, staticFile() resolves from /public.
-// We can't do async fs checks inside JSX, so we mark assets as missing via
-// a prop. The caller (Root.tsx) resolves existence before rendering.
+// Character manifest entry — mirrors public/characters/characters.json
 // ---------------------------------------------------------------------------
 
-interface SceneLayerProps {
-  scene: string;
-  backgroundExists: boolean;
+export interface CharacterConfig {
+  file: string;
+  artboard?: string;
+  stateMachine?: string;
 }
 
-function BackgroundLayer({ scene, backgroundExists }: SceneLayerProps) {
-  if (!backgroundExists) {
-    return <BackgroundPlaceholder scene={scene} />;
-  }
+// ---------------------------------------------------------------------------
+// Background layer
+// ---------------------------------------------------------------------------
+
+function BackgroundLayer({
+  scene,
+  backgroundExists,
+}: {
+  scene: string;
+  backgroundExists: boolean;
+}) {
+  if (!backgroundExists) return <BackgroundPlaceholder scene={scene} />;
   return (
     <Img
       src={staticFile(`backgrounds/${scene}.png`)}
@@ -34,12 +39,11 @@ function BackgroundLayer({ scene, backgroundExists }: SceneLayerProps) {
   );
 }
 
-interface CaptionProps {
-  character: string;
-  dialogue: string;
-}
+// ---------------------------------------------------------------------------
+// Caption overlay
+// ---------------------------------------------------------------------------
 
-function Caption({ character, dialogue }: CaptionProps) {
+function Caption({ character, dialogue }: { character: string; dialogue: string }) {
   return (
     <div
       style={{
@@ -67,14 +71,7 @@ function Caption({ character, dialogue }: CaptionProps) {
       >
         {character}
       </span>
-      <span
-        style={{
-          color: "#ffffff",
-          fontSize: 22,
-          fontFamily: "sans-serif",
-          lineHeight: 1.4,
-        }}
-      >
+      <span style={{ color: "#ffffff", fontSize: 22, fontFamily: "sans-serif", lineHeight: 1.4 }}>
         {dialogue}
       </span>
     </div>
@@ -82,24 +79,27 @@ function Caption({ character, dialogue }: CaptionProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Per-entry character slot.
-// Characters are placed side-by-side based on their index in the scene.
+// Per-entry character slot
 // ---------------------------------------------------------------------------
 
-const CHAR_STATE_MACHINE = "State Machine 1";
+const DEFAULT_STATE_MACHINE = "State Machine 1";
 
-interface EntryLayerProps {
+function EntryLayer({
+  entry,
+  charIndex,
+  characterConfig,
+  characterExists,
+}: {
   entry: TimelineEntry;
   charIndex: number;
+  characterConfig: CharacterConfig | undefined;
   characterExists: boolean;
-}
-
-function EntryLayer({ entry, charIndex, characterExists }: EntryLayerProps) {
+}) {
   const leftPercent = 15 + charIndex * 35;
 
   return (
     <>
-      {characterExists ? (
+      {characterExists && characterConfig ? (
         <div
           style={{
             position: "absolute",
@@ -110,17 +110,18 @@ function EntryLayer({ entry, charIndex, characterExists }: EntryLayerProps) {
           }}
         >
           <RiveCharacter
-            rivePath={staticFile(`characters/${entry.character}.riv`)}
-            stateMachine={CHAR_STATE_MACHINE}
+            rivePath={staticFile(`characters/${characterConfig.file}`)}
+            artboard={characterConfig.artboard}
+            stateMachine={characterConfig.stateMachine ?? DEFAULT_STATE_MACHINE}
             actions={entry.actions}
-            startFrame={0} // 0 because we're already inside a <Sequence>
+            startFrame={0} // 0 = relative to this <Sequence>
           />
         </div>
       ) : (
         <CharacterPlaceholder
           character={entry.character}
           actions={entry.actions}
-          left={`${leftPercent}%` as unknown as number}
+          left={leftPercent * (1920 / 100)}
         />
       )}
       <Caption character={entry.character} dialogue={entry.dialogue} />
@@ -129,23 +130,23 @@ function EntryLayer({ entry, charIndex, characterExists }: EntryLayerProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Public: main composition component.
+// Public: main composition component
 // ---------------------------------------------------------------------------
 
 export interface VideoProps {
   timeline: TimelineEntry[];
-  // Sets of asset names known to exist at render time.
   availableBackgrounds: string[];
   availableCharacters: string[];
+  characterMap: Record<string, CharacterConfig>;
 }
 
 export function AnimationVideo({
   timeline,
   availableBackgrounds,
   availableCharacters,
+  characterMap,
 }: VideoProps) {
-  // Build a running scene background that persists across dialogue lines.
-  // Group lines by scene for background layering.
+  // Collapse consecutive lines in the same scene into background segments.
   const sceneSegments = React.useMemo(() => {
     type Seg = { scene: string; from: number; to: number };
     const segs: Seg[] = [];
@@ -160,21 +161,21 @@ export function AnimationVideo({
     return segs;
   }, [timeline]);
 
-  // Track which characters appear per scene for positioning.
+  // Track first-appearance order of characters per scene for positioning.
   const charIndexInScene = React.useMemo(() => {
-    const sceneCharOrder: Record<string, string[]> = {};
+    const order: Record<string, string[]> = {};
     for (const entry of timeline) {
-      if (!sceneCharOrder[entry.scene]) sceneCharOrder[entry.scene] = [];
-      if (!sceneCharOrder[entry.scene].includes(entry.character)) {
-        sceneCharOrder[entry.scene].push(entry.character);
+      if (!order[entry.scene]) order[entry.scene] = [];
+      if (!order[entry.scene].includes(entry.character)) {
+        order[entry.scene].push(entry.character);
       }
     }
-    return sceneCharOrder;
+    return order;
   }, [timeline]);
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      {/* Background layers — one Sequence per scene */}
+      {/* Background layers */}
       {sceneSegments.map((seg, i) => (
         <Sequence
           key={`bg-${i}`}
@@ -202,9 +203,8 @@ export function AnimationVideo({
           <AbsoluteFill>
             <EntryLayer
               entry={entry}
-              charIndex={
-                charIndexInScene[entry.scene]?.indexOf(entry.character) ?? 0
-              }
+              charIndex={charIndexInScene[entry.scene]?.indexOf(entry.character) ?? 0}
+              characterConfig={characterMap[entry.character]}
               characterExists={availableCharacters.includes(entry.character)}
             />
           </AbsoluteFill>

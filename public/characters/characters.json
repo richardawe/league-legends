@@ -1,0 +1,14 @@
+{
+  "rabbit": {
+    "file": "newcharacter.riv",
+    "artboard": "RabbitArtBoard",
+    "stateMachine": "State Machine 1",
+    "inputs": ["IsHappy", "IsSad", "IsAngry", "HappyTalk", "SadTalk", "AngryTalk", "isBodyMove"]
+  },
+  "alice": {
+    "file": "newcharacter.riv",
+    "artboard": "Artboard",
+    "stateMachine": "State Machine 1",
+    "inputs": ["isHappy", "isSad", "isDisgust", "isHappyTalk", "isSadTalk", "isDisgustTalk", "isHeadMove"]
+  }
+}

@@ -10,7 +10,13 @@
  */
 
 import { execSync } from "child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "fs";
 import path from "path";
 import { createRequire } from "module";
 
@@ -50,7 +56,24 @@ mkdirSync(outDir, { recursive: true });
 const scriptText = readFileSync(scriptFile, "utf-8");
 const timeline = parseScript(scriptText);
 
-// Discover available assets (backgrounds / characters).
+// ---------------------------------------------------------------------------
+// Load the character manifest (characters.json → artboard + stateMachine map)
+// ---------------------------------------------------------------------------
+
+const charManifestPath = path.resolve("public/characters/characters.json");
+let characterMap = {};
+if (existsSync(charManifestPath)) {
+  try {
+    characterMap = JSON.parse(readFileSync(charManifestPath, "utf-8"));
+  } catch (e) {
+    console.warn("[WARN] Could not parse public/characters/characters.json:", e.message);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Discover available assets
+// ---------------------------------------------------------------------------
+
 function listAssets(subdir, ext) {
   const dir = path.resolve("public", subdir);
   if (!existsSync(dir)) return [];
@@ -59,12 +82,21 @@ function listAssets(subdir, ext) {
     .map((f) => f.slice(0, -ext.length));
 }
 
+const availableRivFiles = listAssets("characters", ".riv");
 const availableBackgrounds = listAssets("backgrounds", ".png");
-const availableCharacters = listAssets("characters", ".riv");
 
-// Warn about missing assets.
+// A character is "available" if it's in the manifest AND its mapped .riv file exists.
+const availableCharacters = Object.entries(characterMap)
+  .filter(([, cfg]) => availableRivFiles.includes(cfg.file.replace(/\.riv$/, "")))
+  .map(([name]) => name);
+
+// ---------------------------------------------------------------------------
+// Warn about missing assets
+// ---------------------------------------------------------------------------
+
 const neededBackgrounds = [...new Set(timeline.map((e) => e.scene))];
 const neededCharacters = [...new Set(timeline.map((e) => e.character))];
+
 const missingBg = neededBackgrounds.filter((b) => !availableBackgrounds.includes(b));
 const missingChar = neededCharacters.filter((c) => !availableCharacters.includes(c));
 
@@ -74,14 +106,30 @@ if (missingBg.length > 0) {
 }
 if (missingChar.length > 0) {
   console.warn(`\n[WARN] Missing characters (will use placeholder):`);
-  missingChar.forEach((c) => console.warn(`  public/characters/${c}.riv`));
+  missingChar.forEach((c) => {
+    const inManifest = characterMap[c];
+    if (!inManifest) {
+      console.warn(`  "${c}" not found in public/characters/characters.json`);
+    } else {
+      console.warn(
+        `  "${c}" mapped to ${inManifest.file} but file not found in public/characters/`,
+      );
+    }
+  });
 }
 
-// Write props JSON for Remotion.
-const props = { timeline, availableBackgrounds, availableCharacters };
+// ---------------------------------------------------------------------------
+// Write props JSON for Remotion and kick off the render
+// ---------------------------------------------------------------------------
+
+const props = {
+  timeline,
+  availableBackgrounds,
+  availableCharacters,
+  characterMap,
+};
 writeFileSync(propsFile, JSON.stringify(props, null, 2));
 
-// Use the pre-installed Chromium headless shell if available.
 const CHROMIUM_PATH =
   process.env.REMOTION_CHROME_PATH ??
   "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell";
@@ -102,6 +150,14 @@ const cmd = [
 
 console.log(`\nRendering ${scriptFile} -> ${outFile}`);
 console.log(`Timeline: ${timeline.length} entries`);
+console.log(
+  `Characters: ${availableCharacters.length} available` +
+    (availableCharacters.length ? ` (${availableCharacters.join(", ")})` : ""),
+);
+console.log(
+  `Backgrounds: ${availableBackgrounds.length} available` +
+    (availableBackgrounds.length ? ` (${availableBackgrounds.join(", ")})` : ""),
+);
 if (!useChrome) {
   console.log(
     `[NOTE] Pre-installed Chromium not found at ${CHROMIUM_PATH}; Remotion will download Chrome.`,
@@ -109,9 +165,6 @@ if (!useChrome) {
 }
 console.log(`\n$ ${cmd}\n`);
 
-execSync(cmd, {
-  stdio: "inherit",
-  env: { ...process.env },
-});
+execSync(cmd, { stdio: "inherit" });
 
 console.log(`\nDone! Output: ${outFile}\n`);

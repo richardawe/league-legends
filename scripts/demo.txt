@@ -1,8 +1,9 @@
 [SCENE: park]
-ALICE (wave): Hey! Over here, I saved us a spot.
-BOB (walk-in, talk): Sorry I'm late, the traffic was terrible.
-ALICE (talk): No worries at all, I just got here myself.
+RABBIT (IsHappy, isBodyMove): Hey! Over here, I saved us a spot.
+ALICE (isHappyTalk): So glad you could make it!
+RABBIT (HappyTalk): I have been looking forward to this all week.
 [SCENE: cafe]
-BOB (idle): This place looks cozy.
-ALICE (talk): I come here every weekend.
-BOB (talk): We should make it a regular thing.
+ALICE (isHappyTalk): This place has the best coffee in town.
+RABBIT (IsHappy): The atmosphere here is wonderful.
+ALICE (isSadTalk): I heard there might be some changes coming though.
+RABBIT (IsSad, isBodyMove): Oh really? Tell me everything.

@@ -4,13 +4,13 @@ import { AnimationVideo, VideoProps } from "./Video";
 import { FPS } from "./parseScript";
 
 // Props are injected at render time via --props (see scripts/render.mjs).
-// During Remotion Studio, defaults to an empty timeline so the studio
-// can open without crashing.
+// In Remotion Studio without props, defaults to an empty timeline.
 const inputProps = getInputProps() as Partial<VideoProps>;
 
 const timeline = inputProps.timeline ?? [];
 const availableBackgrounds = inputProps.availableBackgrounds ?? [];
 const availableCharacters = inputProps.availableCharacters ?? [];
+const characterMap = inputProps.characterMap ?? {};
 
 const totalFrames =
   timeline.length > 0
@@ -18,12 +18,13 @@ const totalFrames =
         (acc, e) => Math.max(acc, e.startFrame + e.durationFrames),
         FPS * 5,
       )
-    : FPS * 5; // 5s placeholder when no props supplied
+    : FPS * 5;
 
 const defaultProps: VideoProps = {
   timeline,
   availableBackgrounds,
   availableCharacters,
+  characterMap,
 };
 
 export function RemotionRoot() {
