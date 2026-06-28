@@ -2,7 +2,6 @@ import React from "react";
 import {
   AbsoluteFill,
   Sequence,
-  Img,
   Audio,
   staticFile,
   useCurrentFrame,
@@ -12,7 +11,7 @@ import {
 } from "remotion";
 import { TimelineEntry } from "./parseScript";
 import RiveCharacter from "./RiveCharacter";
-import { BackgroundPlaceholder, CharacterPlaceholder } from "./Placeholder";
+import { CharacterPlaceholder } from "./Placeholder";
 
 // ---------------------------------------------------------------------------
 // Character manifest entry — mirrors public/characters/characters.json
@@ -25,69 +24,226 @@ export interface CharacterConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Per-character name colour (used in speech bubble header)
+// Duolingo-inspired color palette
 // ---------------------------------------------------------------------------
 
-const CHAR_COLOR: Record<string, string> = {
-  rabbit:  "#e65c00",
-  alice:   "#6200ea",
-  mentor:  "#00695c",
-  alex:    "#1565c0",
-  sam:     "#c62828",
-  casey:   "#2e7d32",
-  host:    "#4527a0",
+const DUO_GREEN = "#58CC02";
+const DUO_YELLOW = "#FFC800";
+const DUO_BLUE = "#1CB0F6";
+const DUO_RED = "#FF4B4B";
+const DUO_ORANGE = "#FF9600";
+const DUO_PURPLE = "#CE82FF";
+
+const CHAR_DUO_COLOR: Record<string, string> = {
+  rabbit:  DUO_ORANGE,
+  alice:   DUO_PURPLE,
+  mentor:  DUO_GREEN,
+  alex:    DUO_BLUE,
+  sam:     DUO_RED,
+  casey:   "#2ECC71",
+  host:    DUO_YELLOW,
 };
+
 function charColor(name: string): string {
-  return CHAR_COLOR[name.toLowerCase()] ?? "#1a1a2e";
+  return CHAR_DUO_COLOR[name.toLowerCase()] ?? DUO_GREEN;
 }
 
 // ---------------------------------------------------------------------------
-// Background layer
+// Scene background — gradient per scene, no image dependency
 // ---------------------------------------------------------------------------
 
-function BackgroundLayer({
-  scene,
-  backgroundExists,
-}: {
-  scene: string;
-  backgroundExists: boolean;
-}) {
-  if (!backgroundExists) return <BackgroundPlaceholder scene={scene} />;
+const SCENE_GRADIENTS: Record<string, [string, string]> = {
+  park:    ["#1A5C2E", "#2E7D32"],
+  cafe:    ["#4A1840", "#7B1FA2"],
+  office:  ["#0D2E54", "#1565C0"],
+  default: ["#1F3A52", "#2979FF"],
+};
+
+function SceneBackground({ scene }: { scene: string }) {
+  const [top, bottom] = SCENE_GRADIENTS[scene] ?? SCENE_GRADIENTS.default;
   return (
-    <Img
-      src={staticFile(`backgrounds/${scene}.png`)}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-    />
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: `linear-gradient(170deg, ${top} 0%, ${bottom} 100%)`,
+      }}
+    >
+      {/* Subtle dot grid */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.06,
+          backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Speech bubble (replaces the old bottom caption)
+// Progress HUD — top bar with owl, progress bar, XP badge
 // ---------------------------------------------------------------------------
 
-function SpeechBubble({
-  character,
-  dialogue,
-  leftPercent,
-}: {
-  character: string;
-  dialogue: string;
-  leftPercent: number;
-}) {
+function ProgressHUD({ totalFrames }: { totalFrames: number }) {
+  const frame = useCurrentFrame();
+  const progress = Math.min(frame / Math.max(totalFrames, 1), 1);
+  const xp = Math.floor(progress * 100);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 88,
+        background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(6px)",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 64px",
+        gap: 32,
+        zIndex: 100,
+      }}
+    >
+      {/* Owl badge */}
+      <div
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          background: DUO_GREEN,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 30,
+          boxShadow: `0 4px 0 #3A8A00`,
+          flexShrink: 0,
+        }}
+      >
+        🦉
+      </div>
+
+      {/* Progress track */}
+      <div
+        style={{
+          flex: 1,
+          height: 22,
+          background: "rgba(255,255,255,0.12)",
+          borderRadius: 11,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${progress * 100}%`,
+            background: `linear-gradient(90deg, ${DUO_GREEN} 0%, #89E219 100%)`,
+            borderRadius: 11,
+            boxShadow: `0 2px 8px rgba(88,204,2,0.5)`,
+            transition: "width 33ms linear",
+          }}
+        />
+      </div>
+
+      {/* XP counter */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: DUO_YELLOW,
+          borderRadius: 24,
+          padding: "8px 24px",
+          boxShadow: "0 4px 0 #B38900",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 22,
+            fontWeight: 900,
+            color: "#7A5C00",
+            fontFamily: "sans-serif",
+            letterSpacing: 1,
+          }}
+        >
+          ⚡ {xp} XP
+        </span>
+      </div>
+
+      {/* Hearts */}
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          flexShrink: 0,
+        }}
+      >
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{ fontSize: 26 }}>❤️</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparkle burst on sequence start
+// ---------------------------------------------------------------------------
+
+const SPARKLE_POSITIONS = [
+  { x: 18, y: 28 }, { x: 82, y: 22 }, { x: 50, y: 12 },
+  { x: 12, y: 55 }, { x: 88, y: 50 }, { x: 35, y: 20 }, { x: 65, y: 18 },
+];
+
+function SparkleBurst() {
+  const frame = useCurrentFrame();
+
+  return (
+    <>
+      {SPARKLE_POSITIONS.map((pos, i) => {
+        const delay = i * 2;
+        const localF = Math.max(0, frame - delay);
+        const opacity = interpolate(localF, [0, 3, 9, 18], [0, 1, 0.9, 0], { extrapolateRight: "clamp" });
+        const scale = interpolate(localF, [0, 10], [0.4, 1.6], { extrapolateRight: "clamp" });
+
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `${pos.x}%`,
+              top: `${pos.y}%`,
+              opacity,
+              transform: `scale(${scale})`,
+              fontSize: 36,
+              zIndex: 40,
+              pointerEvents: "none",
+            }}
+          >
+            {i % 2 === 0 ? "✨" : "⭐"}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dialogue card — bottom panel, Duolingo lesson card style
+// ---------------------------------------------------------------------------
+
+function DialogueCard({ character, dialogue }: { character: string; dialogue: string }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Pop-in spring animation
-  const progress = spring({ frame, fps, config: { damping: 14, stiffness: 220, mass: 0.8 } });
-  const scale = interpolate(progress, [0, 1], [0.82, 1]);
+  const progress = spring({ frame, fps, config: { damping: 18, stiffness: 280, mass: 0.6 } });
+  const translateY = interpolate(progress, [0, 1], [80, 0]);
   const opacity = interpolate(progress, [0, 0.25], [0, 1], { extrapolateRight: "clamp" });
-
-  // Center bubble on the character (character left edge + half its 200px width)
-  const charCenterX = (leftPercent / 100) * 1920 + 100;
-  const bubbleWidth = 370;
-  // Clamp so bubble stays within the composition
-  const bubbleLeft = Math.max(16, Math.min(1920 - bubbleWidth - 16, charCenterX - bubbleWidth / 2));
-  const tailOffset = Math.max(24, Math.min(bubbleWidth - 48, charCenterX - bubbleLeft - 16));
 
   const accent = charColor(character);
 
@@ -95,146 +251,176 @@ function SpeechBubble({
     <div
       style={{
         position: "absolute",
-        bottom: 548,
-        left: bubbleLeft,
-        width: bubbleWidth,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 240,
+        background: "#FFFFFF",
+        borderTop: "5px solid #E5E5E5",
+        padding: "28px 80px 44px",
         opacity,
-        transform: `scale(${scale})`,
-        transformOrigin: "bottom center",
-        zIndex: 20,
+        transform: `translateY(${translateY}px)`,
+        zIndex: 30,
       }}
     >
-      {/* Bubble body */}
+      {/* Character name badge */}
       <div
         style={{
-          background: "#FFFEF9",
-          borderRadius: 20,
-          border: `3px solid #1E1B4B`,
-          padding: "14px 18px 16px",
-          boxShadow: "5px 7px 0 #1E1B4B",
-          position: "relative",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 10,
+          background: accent,
+          borderRadius: 28,
+          padding: "7px 22px 7px 10px",
+          marginBottom: 18,
+          boxShadow: `0 4px 0 rgba(0,0,0,0.18)`,
         }}
       >
-        {/* Character name strip */}
         <div
           style={{
-            color: accent,
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.28)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span
+            style={{
+              color: "white",
+              fontFamily: "sans-serif",
+              fontWeight: 900,
+              fontSize: 18,
+            }}
+          >
+            {character[0].toUpperCase()}
+          </span>
+        </div>
+        <span
+          style={{
+            color: "white",
             fontFamily: "sans-serif",
-            fontWeight: 900,
-            fontSize: 14,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            marginBottom: 8,
-            borderBottom: `2px solid ${accent}`,
-            paddingBottom: 6,
+            fontWeight: 800,
+            fontSize: 19,
+            textTransform: "capitalize",
+            letterSpacing: 1,
           }}
         >
           {character}
-        </div>
-        {/* Dialogue text */}
-        <div
-          style={{
-            color: "#1E1B4B",
-            fontFamily: "sans-serif",
-            fontSize: 19,
-            lineHeight: 1.45,
-            fontWeight: 500,
-          }}
-        >
-          {dialogue}
-        </div>
+        </span>
+      </div>
 
-        {/* Tail — outer (border colour) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: -30,
-            left: tailOffset,
-            width: 0,
-            height: 0,
-            borderLeft: "16px solid transparent",
-            borderRight: "16px solid transparent",
-            borderTop: "30px solid #1E1B4B",
-          }}
-        />
-        {/* Tail — inner (fill colour) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: -24,
-            left: tailOffset + 4,
-            width: 0,
-            height: 0,
-            borderLeft: "12px solid transparent",
-            borderRight: "12px solid transparent",
-            borderTop: "24px solid #FFFEF9",
-          }}
-        />
+      {/* Dialogue text */}
+      <div
+        style={{
+          color: "#3C3C3C",
+          fontFamily: "sans-serif",
+          fontSize: 30,
+          lineHeight: 1.45,
+          fontWeight: 600,
+        }}
+      >
+        {dialogue}
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Per-entry character slot
+// Character display — large, centered, with bounce-in
 // ---------------------------------------------------------------------------
 
 const DEFAULT_STATE_MACHINE = "State Machine 1";
 
-function EntryLayer({
+function CharacterDisplay({
   entry,
-  charIndex,
   characterConfig,
   characterExists,
 }: {
   entry: TimelineEntry;
-  charIndex: number;
   characterConfig: CharacterConfig | undefined;
   characterExists: boolean;
 }) {
-  const leftPercent = 15 + charIndex * 35;
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  const progress = spring({ frame, fps, config: { damping: 16, stiffness: 200, mass: 0.9 } });
+  const scale = interpolate(progress, [0, 1], [0.82, 1]);
+  const opacity = interpolate(progress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" });
 
   return (
-    <>
-      {/* Rive character OR placeholder */}
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        bottom: 240,
+        transform: `translateX(-50%) scale(${scale})`,
+        width: 420,
+        height: 580,
+        opacity,
+        zIndex: 20,
+      }}
+    >
       {characterExists && characterConfig ? (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 140,
-            left: `${leftPercent}%`,
-            width: 200,
-            height: 380,
-          }}
-        >
-          <RiveCharacter
-            rivePath={staticFile(`characters/${characterConfig.file}`)}
-            artboard={characterConfig.artboard}
-            stateMachine={characterConfig.stateMachine ?? DEFAULT_STATE_MACHINE}
-            actions={entry.actions}
-            startFrame={0}
-          />
-        </div>
+        <RiveCharacter
+          rivePath={staticFile(`characters/${characterConfig.file}`)}
+          artboard={characterConfig.artboard}
+          stateMachine={characterConfig.stateMachine ?? DEFAULT_STATE_MACHINE}
+          actions={entry.actions}
+          startFrame={0}
+          canvasWidth={420}
+          canvasHeight={580}
+        />
       ) : (
         <CharacterPlaceholder
           character={entry.character}
           actions={entry.actions}
-          left={leftPercent * (1920 / 100)}
+          left={0}
         />
       )}
+    </div>
+  );
+}
 
-      {/* Speech bubble */}
-      <SpeechBubble
-        character={entry.character}
-        dialogue={entry.dialogue}
-        leftPercent={leftPercent}
-      />
+// ---------------------------------------------------------------------------
+// Scene transition label
+// ---------------------------------------------------------------------------
 
-      {/* Audio voiceover for this line */}
-      {entry.audioFile && (
-        <Audio src={staticFile(entry.audioFile)} />
-      )}
-    </>
+function SceneLabel({ scene }: { scene: string }) {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(frame, [0, 8, 40, 55], [0, 1, 1, 0], { extrapolateRight: "clamp" });
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 110,
+        left: "50%",
+        transform: "translateX(-50%)",
+        opacity,
+        background: "rgba(0,0,0,0.5)",
+        borderRadius: 40,
+        padding: "10px 36px",
+        zIndex: 50,
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <span
+        style={{
+          color: "white",
+          fontFamily: "sans-serif",
+          fontWeight: 700,
+          fontSize: 22,
+          textTransform: "uppercase",
+          letterSpacing: 3,
+          opacity: 0.85,
+        }}
+      >
+        📍 {scene}
+      </span>
+    </div>
   );
 }
 
@@ -251,11 +437,15 @@ export interface VideoProps {
 
 export function AnimationVideo({
   timeline,
-  availableBackgrounds,
   availableCharacters,
   characterMap,
 }: VideoProps) {
-  // Collapse consecutive same-scene lines into background segments.
+  const totalFrames = React.useMemo(
+    () => timeline.reduce((max, e) => Math.max(max, e.startFrame + e.durationFrames), 0),
+    [timeline],
+  );
+
+  // Scene segments for background transitions
   const sceneSegments = React.useMemo(() => {
     type Seg = { scene: string; from: number; to: number };
     const segs: Seg[] = [];
@@ -270,21 +460,9 @@ export function AnimationVideo({
     return segs;
   }, [timeline]);
 
-  // First-appearance order of characters per scene (for horizontal positioning).
-  const charIndexInScene = React.useMemo(() => {
-    const order: Record<string, string[]> = {};
-    for (const entry of timeline) {
-      if (!order[entry.scene]) order[entry.scene] = [];
-      if (!order[entry.scene].includes(entry.character)) {
-        order[entry.scene].push(entry.character);
-      }
-    }
-    return order;
-  }, [timeline]);
-
   return (
-    <AbsoluteFill style={{ background: "#000" }}>
-      {/* Background layers */}
+    <AbsoluteFill style={{ background: "#0D1B2A" }}>
+      {/* Scene backgrounds */}
       {sceneSegments.map((seg, i) => (
         <Sequence
           key={`bg-${i}`}
@@ -293,15 +471,16 @@ export function AnimationVideo({
           layout="none"
         >
           <AbsoluteFill>
-            <BackgroundLayer
-              scene={seg.scene}
-              backgroundExists={availableBackgrounds.includes(seg.scene)}
-            />
+            <SceneBackground scene={seg.scene} />
+            {/* Show scene label only at the start of each scene */}
+            {seg.from === timeline.find((e) => e.scene === seg.scene)?.startFrame && (
+              <SceneLabel scene={seg.scene} />
+            )}
           </AbsoluteFill>
         </Sequence>
       ))}
 
-      {/* Dialogue + character + speech bubble + audio layers */}
+      {/* Per-line layers */}
       {timeline.map((entry, i) => (
         <Sequence
           key={`line-${i}`}
@@ -310,15 +489,20 @@ export function AnimationVideo({
           layout="none"
         >
           <AbsoluteFill>
-            <EntryLayer
+            <SparkleBurst />
+            <CharacterDisplay
               entry={entry}
-              charIndex={charIndexInScene[entry.scene]?.indexOf(entry.character) ?? 0}
               characterConfig={characterMap[entry.character]}
               characterExists={availableCharacters.includes(entry.character)}
             />
+            <DialogueCard character={entry.character} dialogue={entry.dialogue} />
+            {entry.audioFile && <Audio src={staticFile(entry.audioFile)} />}
           </AbsoluteFill>
         </Sequence>
       ))}
+
+      {/* Progress HUD always on top */}
+      <ProgressHUD totalFrames={totalFrames} />
     </AbsoluteFill>
   );
 }

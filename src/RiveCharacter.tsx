@@ -31,6 +31,8 @@ interface Props {
   stateMachine: string;
   actions: string[];
   startFrame: number;
+  canvasWidth?: number;
+  canvasHeight?: number;
 }
 
 interface RiveState {
@@ -50,6 +52,8 @@ function RiveCharacter({
   stateMachine: smName,
   actions,
   startFrame,
+  canvasWidth = 420,
+  canvasHeight = 580,
 }: Props) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -160,8 +164,8 @@ function RiveCharacter({
   return (
     <canvas
       ref={canvasRef}
-      width={200}
-      height={380}
+      width={canvasWidth}
+      height={canvasHeight}
       style={{ width: "100%", height: "100%" }}
     />
   );
